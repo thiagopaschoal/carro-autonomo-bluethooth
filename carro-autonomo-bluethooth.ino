@@ -12,17 +12,18 @@
 //Definindo os pinos
 #define trigPin A1          // Pino TRIG do sensor no pino analógico A0
 #define echoPin A2          // Pino ECHO do sensor no pino analógico A1
+
 // motor um                 // Ligação dos pinos da Ponte H L298N
 #define in1  7              // Pino in1 na porta digital 7
 #define in2  6              // Pino in2 na porta digital 6
+
 // motor dois               // Ligação dos pinos da Ponte H L298N
 #define in3  5              // Pino in3 na porta digital 5
 #define in4  4              // Pino in4 na porta digital 4
 #define buzzer 10           // Pino buzzer na porta 10
-#define tempo 10            // Tempo entre cada toque de cada frequencia
 #define seta 13             // Pino seta na porta 13
+#define seta2 9             // Pino seta2 na porta 9
 
-int frequencia = 0;
 Servo servoSensor;          // Crie um objeto Servo para controlar o Servo.
 SoftwareSerial ble(2, 3);   // Cria um objeto bluethooth ligando rx-3 e tx-2
 int incomingByte;
@@ -61,11 +62,18 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   pinMode(buzzer, OUTPUT);
-  pinMode(setaDoFioVermelho, OUTPUT);
+  pinMode(seta, OUTPUT);
+  pinMode(seta2, OUTPUT);
 
   //Configuraçõs do sensor ultrassonico
   pinMode(trigPin, OUTPUT);     //define o pino TRIG como saída
   pinMode(echoPin, INPUT);      //define o pino ECHO como entrada
+}
+
+void tocaAlarme(unsigned int tempo) {
+  tone(buzzer, 4000); // Ligando o Apito com uma frequencia de 4000 hz.
+  delay(tempo); // Duração do Apito
+  noTone(buzzer); // Desliga o apito
 }
 
 // Função principal do Arduino
@@ -75,24 +83,23 @@ void loop() {
     incomingByte = ble.read();
     if (incomingByte == 's' || incomingByte == 'S') {
       ble.println("Parando carrinho...");
-      digitalWrite(setaDoFioVermelho, HIGH);
       servoSensor.detach();
-      tocaAlarme();
-      Parar ();
+      Parar();
+      ligarPiscaAlerta();
     } else if (incomingByte == 'f' || incomingByte == 'F')  {
       ble.println("Ligando carrinho...");
-      digitalWrite(setaDoFioVermelho, LOW);
+      digitalWrite(seta, LOW);
+      digitalWrite(seta2, LOW);
       noTone(buzzer);
       servoSensor.attach(11);
     }
   }
-
   servoSensor.write (90);                           // Gira o Servo com o sensor a 90 graus
   delay (100);                                      // Aguarda 100 milesugodos
   Distancia = Procurar ();                          // Medindo a Distancia em CM.
   if (Distancia < 40) {                             // Se há obstáculo encontrado a menos de 40cm.
-    direcao ();                                      // Se Frente estiver bloqueado, mude de direção
-  } else if (Distancia >= 40)  {                      // Se o obstáculo for encontrado entre a mais de 40cm
+    direcao ();                                     // Se Frente estiver bloqueado, mude de direção
+  } else if (Distancia >= 40)  {                    // Se o obstáculo for encontrado entre a mais de 40cm
     Frente ();                                      // Robô se move para a direção da Frente.
   }
 
@@ -120,23 +127,23 @@ void direcao () {
 void CompareDistance () {
   if (DistanciaDireita > DistanciaEsquerda) {       // Se a direita está menos obstruída.
     Vireadireita ();                                // O robô vai virar a direita
-  }
-  else if (DistanciaEsquerda > DistanciaDireita) {  // Se Esquerda estiver menos obstruída.
+  } else if (DistanciaEsquerda > DistanciaDireita) {  // Se Esquerda estiver menos obstruída.
     VireaEsquerda ();                               // Robô Vire na direção esquerda.
-  }
-  else {                                            // Se ambos estiverem igualmente obstruídos.
+  } else {                                            // Se ambos estiverem igualmente obstruídos.
     Retorne ();                                     // Robô Vire-se.
   }
 }
 
-void tocaAlarme() {
-  for (frequencia = 150; frequencia < 1800; frequencia += 1) { // Tone que produz sirene de polícia
-    tone(buzzer, frequencia, tempo);
-    delay(3);
-  }
-  for (frequencia = 1800; frequencia > 150; frequencia -= 1) { // Tone que produz sirene de polícia
-    tone(buzzer, frequencia, tempo);
-    delay(3);
+void ligarPiscaAlerta() {
+  while (incomingByte == 's' || incomingByte == 'S') {
+    digitalWrite(seta, HIGH);
+    digitalWrite(seta2, HIGH);
+    tocaAlarme(2000);
+    delay(1000);
+    digitalWrite(seta, LOW);
+    digitalWrite(seta2, LOW);
+    delay(500);
+    incomingByte = ble.read();
   }
 }
 
