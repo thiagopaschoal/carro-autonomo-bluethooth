@@ -26,7 +26,7 @@
 
 Servo servoSensor;          // Crie um objeto Servo para controlar o Servo.
 SoftwareSerial ble(2, 3);   // Cria um objeto bluethooth ligando rx-3 e tx-2
-int incomingByte = 0;
+int incomingByte;
 
 //função para procurar obtasculo a todo o tempo
 int Procurar (void) {
@@ -78,19 +78,15 @@ void tocaAlarme(unsigned int tempo) {
 
 // Função principal do Arduino
 void loop() {
-  incomingByte = ble.read();
-  if (incomingByte != 0) {
+  if (ble.available() > 0) {
+    ble.println("Aguarde! Enviando dados...");
+    delay(5);
+    incomingByte = ble.read();
     if (incomingByte == 's' || incomingByte == 'S') {
-      ble.println("Parando carrinho...");
+      ble.println("Parando carrinho");
       servoSensor.detach();
       Parar();
       ligarPiscaAlerta();
-    } else if (incomingByte == 'f' || incomingByte == 'F')  {
-      ble.println("Ligando carrinho...");
-      digitalWrite(seta, LOW);
-      digitalWrite(seta2, LOW);
-      noTone(buzzer);
-      servoSensor.attach(11);
     }
   }
   servoSensor.write (90);                           // Gira o Servo com o sensor a 90 graus
@@ -101,7 +97,6 @@ void loop() {
   } else if (Distancia >= 40)  {                    // Se o obstáculo for encontrado entre a mais de 40cm
     Frente ();                                      // Robô se move para a direção da Frente.
   }
-
 }
 
 // Função para pegar as distancias de cada direção
@@ -144,7 +139,12 @@ void ligarPiscaAlerta() {
     delay(500);
     incomingByte = ble.read();
     if (incomingByte == 'f' || incomingByte == 'F') {
-      break;
+      ble.println("Ligando carrinho...");
+      digitalWrite(seta, LOW);
+      digitalWrite(seta2, LOW);
+      noTone(buzzer);
+      servoSensor.attach(11);
+      return;
     }
   }
 }
