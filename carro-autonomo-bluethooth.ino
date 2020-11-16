@@ -26,7 +26,7 @@
 
 Servo servoSensor;          // Crie um objeto Servo para controlar o Servo.
 SoftwareSerial ble(2, 3);   // Cria um objeto bluethooth ligando rx-3 e tx-2
-int incomingByte;
+int incomingByte = 0;
 
 //função para procurar obtasculo a todo o tempo
 int Procurar (void) {
@@ -78,9 +78,8 @@ void tocaAlarme(unsigned int tempo) {
 
 // Função principal do Arduino
 void loop() {
-  if (ble.available() > 0) {
-    // read the oldest byte in the serial buffer:
-    incomingByte = ble.read();
+  incomingByte = ble.read();
+  if (incomingByte != 0) {
     if (incomingByte == 's' || incomingByte == 'S') {
       ble.println("Parando carrinho...");
       servoSensor.detach();
@@ -135,7 +134,7 @@ void CompareDistance () {
 }
 
 void ligarPiscaAlerta() {
-  while (incomingByte == 's' || incomingByte == 'S') {
+  while (true) {
     digitalWrite(seta, HIGH);
     digitalWrite(seta2, HIGH);
     tocaAlarme(2000);
@@ -144,6 +143,9 @@ void ligarPiscaAlerta() {
     digitalWrite(seta2, LOW);
     delay(500);
     incomingByte = ble.read();
+    if (incomingByte == 'f' || incomingByte == 'F') {
+      break;
+    }
   }
 }
 
